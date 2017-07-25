@@ -124,8 +124,8 @@ def ComputeClusters(filename, options):
     owners = -np.ones(len(phi), dtype=np.int32)
     owners = FindOwners(ngb, phi,ngbdist)
     for o in np.unique(owners):
-        plt.scatter(x[owners==o,0],x[owners==o,1],s=0.1)
-    plt.show()
+#        plt.scatter(x[owners==o,0],x[owners==o,1],s=0.1)
+#    plt.show()
     
     clusters = OrderedDict()
     for i, o in enumerate(owners):
