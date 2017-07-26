@@ -7,13 +7,14 @@ Usage: HOP2.py <files> ... [options]
 Options:                                                                       
    -h --help                  Show this screen.
    --softening=<L>            Gravitational softening used if adaptive softenings not found [default: 0.1]
-   --ptype=<N>                 GIZMO particle type to analyze [default: 1]
+   --ptype=<N>                GIZMO particle type to analyze [default: 1]
    --G=<G>                    Gravitational constant to use; should be consistent with what was used in the simulation. [default: 1.0]
    --boxsize=<L>              Box size of the simulation; for neighbour-search purposes. [default: None]
    --cluster_ngb=<N>          Length of particle's neighbour list. [default: 32]
    --min_cluster_size=<N>     Minimum number of particles in cluster. [default: 32]
    --brute_force_N=<N>        Maximum number of particles in a cluster before we compute the potential in the spherically-symmetric approximation. [default: 100000]
-   --fuzz=<L>                 Randomly perturb particle positions by this amount to avoid problems with particles at the same position in 32bit floating point precision data [default: None]
+   --fuzz=<L>                 Randomly perturb particle positions by this small fraction to avoid problems with particles at the same position in 32bit floating point precision data [default: 0]
+   --profile_fits=<N>         
 """
 
 import h5py
@@ -70,6 +71,24 @@ def Owner(i, ngb, owners, phi,r):
         owners[i] = Owner(ngb[i][phi[ngb[i]].argmin()], ngb, owners, phi,r)
         return owners[i]
 
+def SaveArrayDict(path, arrdict):
+    """Takes a dictionary of numpy arrays with names as the keys and saves them in an ASCII file with a descriptive header"""
+    header = ""
+    offset = 0
+    
+    for i, k in enumerate(arrdict.keys()):
+        if type(arrdict[k])==list: arrdict[k] = np.array(arrdict[k])
+        if len(arrdict[k].shape) == 1:
+            header += "(%d) "%offset + k + "\n"
+            offset += 1
+        else:
+            header += "(%d-%d) "%(offset, offset+arrdict[k].shape[1]-1) + k + "\n"
+            offset += arrdict[k].shape[1]
+            
+    data = np.column_stack([b for b in arrdict.values()])
+    data = data[(-data[:,0]).argsort()] 
+    np.savetxt(path, data, header=header)
+
 def ComputeClusters(filename, options):
     brute_force_N = int(float(options["--brute_force_N"]) + 0.5)
     cluster_ngb = int(float(options["--cluster_ngb"]) + 0.5)
@@ -82,11 +101,8 @@ def ComputeClusters(filename, options):
         boxsize = float(boxsize)
     else:
         boxsize = None
-    fuzz = options["--fuzz"]
-    if fuzz != "None":
-        fuzz = float(fuzz)
-    else:
-        fuzz = None
+    fuzz = float(options["--fuzz"])
+
     
     F = h5py.File(filename)
     if not ptype in F.keys():
@@ -235,31 +251,10 @@ def ComputeClusters(filename, options):
             Fout[cluster_id].create_dataset(k, data=np.array(F[ptype][k])[c])
     
     F.close()
-
-    
     
     #now save the ascii data files
-
-    
-    header = ""
-    offset = 0
-    for i, k in enumerate(bound_data.keys()):
-        header += "(%d) "%(i+offset) + k + "\n"
-        if k=="Center": offset += 2
-            
-    data = np.column_stack([b for b in bound_data.values()])
-    data = data[(-data[:,0]).argsort()]
-    np.savetxt(argv[1].split("snapshot")[0] + "bound_%s.dat"%n, data, header=header)
-
-    header = ""
-    offset = 0
-    for i, k in enumerate(unbound_data.keys()):
-        header += "(%d) "%(i+offset) + k + "\n"
-        if k=="Center": offset += 2
-            
-    data = np.column_stack([b for b in unbound_data.values()])
-    data = data[(-data[:,0]).argsort()]
-    np.savetxt(argv[1].split("snapshot")[0] + "unbound_%s.dat"%n, data, header=header)
+    SaveArrayDict(argv[1].split("snapshot")[0] + "bound_%s.dat"%n, bound_data)
+    SaveArrayDict(argv[1].split("snapshot")[0] + "unbound_%s.dat"%n, unbound_data)
 
 
     
