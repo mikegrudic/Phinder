@@ -196,7 +196,7 @@ def ComputeClusters(filename, options):
         unbound_data["Center"].append(xc[phic.argmin()])
         unbound_data["HalfMassRadius"].append(np.median(r))
 
-        Mr = m.cumsum()
+        Mr = mc.cumsum()
         if len(c) < brute_force_N:
             phi2 = ComputePotential(xc, mc, hc/2.8, G) # direct summation
         else:
