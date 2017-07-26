@@ -20,8 +20,7 @@ import h5py
 from numba import jit
 import numpy as np
 from sys import argv
-from scipy import spatial, integrate
-from matplotlib import pyplot as plt
+from scipy import integrate
 import meshoid
 from docopt import docopt
 from collections import OrderedDict
@@ -112,7 +111,6 @@ def ComputeClusters(filename, options):
     hmin = h_ags.min()
         
     v = np.array(F[ptype]["Velocities"])
-    pid = np.array(F[ptype]["ParticleIDs"])
 
     print "Finding neighbors..."
     mm = meshoid.meshoid(x, m, des_ngb=cluster_ngb, boxsize=boxsize)
@@ -133,7 +131,7 @@ def ComputeClusters(filename, options):
     # have to merge any spurious double-clusters
     clusters_merged = {}
     for c in clusters.keys():
-        dx = np.sum((x[clusters[c]] - x[c])**2, axis=1)**0.5
+#        dx = np.sum((x[clusters[c]] - x[c])**2, axis=1)**0.5
         r1s = 4*hmin
         dxc = np.sum((x[clusters.keys()] - x[c])**2, axis=1)**0.5
         # is there are no clusters within the 10% radius, simply copy the original cluster. Otherwise, merge the clusters in proximity
@@ -154,7 +152,7 @@ def ComputeClusters(filename, options):
 
     # Now we determine the bound subsets of the clusters and do profile fits
 
-    csize = [len(c) for c in clusters.values()]
+#    csize = [len(c) for c in clusters.values()]
     rejects = []
 
     bound_data = OrderedDict()
@@ -207,10 +205,10 @@ def ComputeClusters(filename, options):
 
         rho = mc/(4*np.pi*hc**3/3)
         v_cluster = np.average(vc,axis=0,weights=mc*rho**2)
-        x_cluster = np.average(xc,axis=0,weights=mc*rho**2)
+#        x_cluster = np.average(xc,axis=0,weights=mc*rho**2)
         vSqr = np.sum((vc - v_cluster)**2,axis=1)
 
-        old_size = len(c)
+#        old_size = len(c)
         bound = 0.5*vSqr + phi2 < 0
 
         unbound_data["BoundFraction"].append(float(bound.sum())/len(bound))
