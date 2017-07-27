@@ -200,7 +200,7 @@ def ComputeClusters(filename, options):
 
     n = filename.split("snapshot_")[1].split(".")[0]
 
-    Fout = h5py.File(argv[1].split("snapshot")[0] + "Clusters_%s.hdf5"%n, 'w')
+    Fout = h5py.File(filename.split("snapshot")[0] + "Clusters_%s.hdf5"%n, 'w')
 
     print("Selecting bound subsets...")
 
@@ -275,8 +275,8 @@ def ComputeClusters(filename, options):
     F.close()
     
     #now save the ascii data files
-    SaveArrayDict(argv[1].split("snapshot")[0] + "bound_%s.dat"%n, bound_data)
-    SaveArrayDict(argv[1].split("snapshot")[0] + "unbound_%s.dat"%n, unbound_data)
+    SaveArrayDict(filename.split("snapshot")[0] + "bound_%s.dat"%n, bound_data)
+    SaveArrayDict(filename.split("snapshot")[0] + "unbound_%s.dat"%n, unbound_data)
 
 
     
