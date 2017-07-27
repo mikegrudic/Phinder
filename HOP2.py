@@ -22,12 +22,12 @@ from numba import jit, vectorize
 import numpy as np
 from sys import argv
 from scipy import integrate
-from scipy.optimize import leastsq, curve_fit
 import matplotlib.pyplot as plt
 import meshoid
 from docopt import docopt
 from collections import OrderedDict
 from EFF_fit import EFF_fit
+
     
 @jit
 def ComputePotential(x, m, h, G=1.):
@@ -78,6 +78,7 @@ def SaveArrayDict(path, arrdict):
     """Takes a dictionary of numpy arrays with names as the keys and saves them in an ASCII file with a descriptive header"""
     header = ""
     offset = 0
+    print path
     
     for i, k in enumerate(arrdict.keys()):
         if type(arrdict[k])==list: arrdict[k] = np.array(arrdict[k])
@@ -198,7 +199,8 @@ def ComputeClusters(filename, options):
     unbound_data["NumParticles"] = []
     unbound_data["BoundFraction"] = []
 
-    n = argv[1].split("snapshot_")[1].split(".")[0]
+    n = filename.split("snapshot_")[1].split(".")[0]
+    print n
     Fout = h5py.File(argv[1].split("snapshot")[0] + "Clusters_%s.hdf5"%n, 'w')
 
     print "Selecting bound subsets..."

@@ -12,7 +12,7 @@ def EFF_Mr(r, gamma, dim=3):
     elif dim==3: return 1 - (2*r**(2 - gamma)*g((1 + gamma)/2.)*hyp2f1((-2 + gamma)/2.,(1 + gamma)/2.,gamma/2.,-r**(-2)))/np.sqrt(np.pi)/g(gamma/2)
     else: return 1. - (1 + r**2.)**(1-gamma/2)
 
-@jit
+#@jit
 def Rebin(data, bins, nmin=8):
     counts = np.histogram(data, bins)[0]
     mask = np.ones_like(bins, dtype=np.bool)
