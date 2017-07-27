@@ -78,7 +78,6 @@ def SaveArrayDict(path, arrdict):
     """Takes a dictionary of numpy arrays with names as the keys and saves them in an ASCII file with a descriptive header"""
     header = ""
     offset = 0
-    print path
     
     for i, k in enumerate(arrdict.keys()):
         if type(arrdict[k])==list: arrdict[k] = np.array(arrdict[k])
@@ -117,11 +116,11 @@ def ComputeClusters(filename, options):
     
     F = h5py.File(filename)
     if not ptype in F.keys():
-        print "Particles of desired type not found!"
+        print("Particles of desired type not found!")
 
     m = np.array(F[ptype]["Masses"])
     if len(m) < 32:
-        "Not enough particles for meaningful cluster analysis!"
+        print("Not enough particles for meaningful cluster analysis!")
         return
 
 
@@ -139,12 +138,12 @@ def ComputeClusters(filename, options):
         
     v = np.array(F[ptype]["Velocities"])
 
-    print "Finding neighbors..."
+    print("Finding neighbors...")
     mm = meshoid.meshoid(x, m, des_ngb=cluster_ngb, boxsize=boxsize)
     h = mm.h
 
     ngbdist, ngb = mm.ngbdist, mm.ngb #tree.query(x, cluster_ngb)
-    print "Done!"
+    print("Done!")
 
     owners = -np.ones(len(phi), dtype=np.int32)
     owners = FindOwners(ngb, phi,ngbdist)
@@ -200,10 +199,10 @@ def ComputeClusters(filename, options):
     unbound_data["BoundFraction"] = []
 
     n = filename.split("snapshot_")[1].split(".")[0]
-    print n
+    print(n)
     Fout = h5py.File(argv[1].split("snapshot")[0] + "Clusters_%s.hdf5"%n, 'w')
 
-    print "Selecting bound subsets..."
+    print("Selecting bound subsets...")
 
     rejects = []
     bound_clusters = []    
@@ -284,7 +283,7 @@ def ComputeClusters(filename, options):
 def main():
     options = docopt(__doc__)
     for f in options["<files>"]:
-        print f
+        print(f)
         ComputeClusters(f, options)
 
 if __name__ == "__main__": main()
