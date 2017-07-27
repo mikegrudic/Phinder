@@ -199,7 +199,7 @@ def ComputeClusters(filename, options):
     unbound_data["BoundFraction"] = []
 
     n = filename.split("snapshot_")[1].split(".")[0]
-    print(n)
+
     Fout = h5py.File(argv[1].split("snapshot")[0] + "Clusters_%s.hdf5"%n, 'w')
 
     print("Selecting bound subsets...")
