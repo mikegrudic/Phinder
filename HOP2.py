@@ -14,18 +14,21 @@ Options:
    --min_cluster_size=<N>     Minimum number of particles in cluster. [default: 32]
    --brute_force_N=<N>        Maximum number of particles in a cluster before we compute the potential in the spherically-symmetric approximation. [default: 100000]
    --fuzz=<L>                 Randomly perturb particle positions by this small fraction to avoid problems with particles at the same position in 32bit floating point precision data [default: 0]
-   --profile_fits=<N>         
+   --fits=<N>         Fit clusters to EFF profile: 0 if no, 2 if fitting surface density, 3 if fitting 3D density. [default: 0]
 """
 
 import h5py
-from numba import jit
+from numba import jit, vectorize
 import numpy as np
 from sys import argv
 from scipy import integrate
+from scipy.optimize import leastsq, curve_fit
+import matplotlib.pyplot as plt
 import meshoid
 from docopt import docopt
 from collections import OrderedDict
-
+from EFF_fit import EFF_fit
+    
 @jit
 def ComputePotential(x, m, h, G=1.):
     """Computes the gravitational potential via brute force
@@ -89,6 +92,12 @@ def SaveArrayDict(path, arrdict):
     data = data[(-data[:,0]).argsort()] 
     np.savetxt(path, data, header=header)
 
+#@jit
+#def delta_M(rbins, params):
+#    result = params[0]*np.diff(EFF_Mr(r/params[1], params[2],dim)) - mbin
+    
+
+
 def ComputeClusters(filename, options):
     brute_force_N = int(float(options["--brute_force_N"]) + 0.5)
     cluster_ngb = int(float(options["--cluster_ngb"]) + 0.5)
@@ -102,6 +111,7 @@ def ComputeClusters(filename, options):
     else:
         boxsize = None
     fuzz = float(options["--fuzz"])
+    fits = int(float(options["--fits"])+0.5)
 
     
     F = h5py.File(filename)
@@ -166,7 +176,7 @@ def ComputeClusters(filename, options):
 
     # This ends the assignment of clusters to potential wells; the dictionary clusters contains the indices if that cluster's particles
 
-    # Now we determine the bound subsets of the clusters and do profile fits
+    # Now we determine the bound subsets of the clusters
 
 #    csize = [len(c) for c in clusters.values()]
     rejects = []
@@ -176,6 +186,11 @@ def ComputeClusters(filename, options):
     bound_data["Center"] = []
     bound_data["HalfMassRadius"] = []
     bound_data["NumParticles"] = []
+    if fits:
+        bound_data["EFF_gamma"] = []
+        bound_data["EFF_gamma_error"] = []
+        bound_data["EFF_a"] = []
+        bound_data["EFF_a_error"] = []
     unbound_data = OrderedDict()
     unbound_data["Mass"] = []
     unbound_data["Center"] = []
@@ -214,9 +229,9 @@ def ComputeClusters(filename, options):
 
         Mr = mc.cumsum()
         if len(c) < brute_force_N:
-            phi2 = ComputePotential(xc, mc, hc/2.8, G) # direct summation
+            phi2 = ComputePotential(xc, mc, h_ags[c]/2.8, G) # direct summation
         else:
-            phi2 = G*integrate.cumtrapz(Mr[::-1]/(r[::-1]**2 + softening**2), x=r[::-1], initial=0.0)[::-1] - G*mc.sum()/r[-1] # spherical symmetry approximation
+            phi2 = G*integrate.cumtrapz(Mr[::-1]/(r[::-1]**2 + (h_ags[c]/2.8)**2), x=r[::-1], initial=0.0)[::-1] - G*mc.sum()/r[-1] # spherical symmetry approximation
 
 
         rho = mc/(4*np.pi*hc**3/3)
@@ -238,6 +253,12 @@ def ComputeClusters(filename, options):
             bound_data["NumParticles"].append(len(mc[bound]))
             bound_data["Center"].append(xc[bound][phic[bound].argmin()])
             bound_data["HalfMassRadius"].append(np.median(r[bound]))
+            if fits:
+                EFF_params, EFF_errors = EFF_fit(mc[bound], xc[bound], phic[bound], hc[bound], dim=fits)
+                bound_data["EFF_gamma"].append(EFF_params[2])
+                bound_data["EFF_gamma_error"].append(EFF_errors[2])
+                bound_data["EFF_a"].append(EFF_params[1])
+                bound_data["EFF_a_error"].append(EFF_errors[1])
 
 #    cluster_masses = np.array(bound_data["Mass"])
     bound_clusters = np.array(bound_clusters)[np.array(bound_data["Mass"]).argsort()[::-1]]
