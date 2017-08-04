@@ -12,7 +12,7 @@ Options:
    --boxsize=<L>              Box size of the simulation; for neighbour-search purposes. [default: None]
    --cluster_ngb=<N>          Length of particle's neighbour list. [default: 32]
    --min_cluster_size=<N>     Minimum number of particles in cluster. [default: 32]
-   --brute_force_N=<N>        Maximum number of particles in a cluster before we compute the potential in the spherically-symmetric approximation. [default: 100000]
+   --brute_force_N=<N>        Maximum number of particles in a cluster before we compute the potential in the spherically-symmetric approximation. [default: 40000]
    --fuzz=<L>                 Randomly perturb particle positions by this small fraction to avoid problems with particles at the same position in 32bit floating point precision data [default: 0]
    --fits=<N>         Fit clusters to EFF profile: 0 if no, 2 if fitting surface density, 3 if fitting 3D density. [default: 0]
 """
@@ -191,6 +191,8 @@ def ComputeClusters(filename, options):
         bound_data["EFF_gamma_error"] = []
         bound_data["EFF_a"] = []
         bound_data["EFF_a_error"] = []
+        bound_data["EFF_DeltaM"] = []
+        bound_data["EFF_rChiSqr"] = []
     unbound_data = OrderedDict()
     unbound_data["Mass"] = []
     unbound_data["Center"] = []
@@ -255,12 +257,15 @@ def ComputeClusters(filename, options):
             bound_data["Center"].append(xc[bound][phic[bound].argmin()])
             bound_data["HalfMassRadius"].append(np.median(r[bound]))
             if fits:
-                EFF_params, EFF_errors = EFF_fit(mc[bound], xc[bound], phic[bound], hc[bound], dim=fits)
+                print EFF_fit(mc[bound], xc[bound], phic[bound], hc[bound], dim=fits)
+                EFF_params, EFF_errors, EFF_dm, EFF_rChiSqr = EFF_fit(mc[bound], xc[bound], phic[bound], hc[bound], dim=fits)
                 bound_data["EFF_gamma"].append(EFF_params[2])
                 bound_data["EFF_gamma_error"].append(EFF_errors[2])
                 bound_data["EFF_a"].append(EFF_params[1])
                 bound_data["EFF_a_error"].append(EFF_errors[1])
-
+                bound_data["EFF_DeltaM"].append(EFF_dm)
+                bound_data["EFF_rChiSqr"].append(EFF_rChiSqr)
+                print "Reduced chi^2: %g Relative mass error: %g"%(EFF_rChiSqr,EFF_dm/mc[bound].sum())
 #    cluster_masses = np.array(bound_data["Mass"])
     bound_clusters = np.array(bound_clusters)[np.array(bound_data["Mass"]).argsort()[::-1]]
     
