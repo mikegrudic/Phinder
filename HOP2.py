@@ -12,7 +12,7 @@ Options:
    --boxsize=<L>              Box size of the simulation; for neighbour-search purposes. [default: None]
    --cluster_ngb=<N>          Length of particle's neighbour list. [default: 32]
    --min_cluster_size=<N>     Minimum number of particles in cluster. [default: 32]
-   --brute_force_N=<N>        Maximum number of particles in a cluster before we compute the potential in the spherically-symmetric approximation. [default: 40000]
+   --brute_force_N=<N>        Maximum number of particles in a cluster before we compute the potential in the spherically-symmetric approximation. [default: 10000]
    --fuzz=<L>                 Randomly perturb particle positions by this small fraction to avoid problems with particles at the same position in 32bit floating point precision data [default: 0]
    --fits=<N>         Fit clusters to EFF profile: 0 if no, 2 if fitting surface density, 3 if fitting 3D density. [default: 0]
 """
@@ -27,7 +27,8 @@ import meshoid
 from docopt import docopt
 from collections import OrderedDict
 from EFF_fit import EFF_fit
-
+import TreePotential
+from os import path
     
 @jit
 def ComputePotential(x, m, h, G=1.):
@@ -90,7 +91,7 @@ def SaveArrayDict(path, arrdict):
             
     data = np.column_stack([b for b in arrdict.values()])
     data = data[(-data[:,0]).argsort()] 
-    np.savetxt(path, data, header=header)
+    np.savetxt(path, data, header=header,  fmt='%10.5g', delimiter='\t')
 
 #@jit
 #def delta_M(rbins, params):
@@ -113,8 +114,11 @@ def ComputeClusters(filename, options):
     fuzz = float(options["--fuzz"])
     fits = int(float(options["--fits"])+0.5)
 
-    
-    F = h5py.File(filename)
+    if path.isfile(filename):
+        F = h5py.File(filename)
+    else:
+        print("Could not find "+filename)
+        return
     if not ptype in F.keys():
         print("Particles of desired type not found!")
 
@@ -234,11 +238,12 @@ def ComputeClusters(filename, options):
         if len(c) < brute_force_N:
             phi2 = ComputePotential(xc, mc, h_ags[c]/2.8, G) # direct summation
         else:
-            phi2 = G*integrate.cumtrapz(Mr[::-1]/(r[::-1]**2 + (h_ags[c]/2.8)**2), x=r[::-1], initial=0.0)[::-1] - G*mc.sum()/r[-1] # spherical symmetry approximation
+            phi2 = TreePotential.Potential(np.float64(xc), np.float64(mc), G=G)
+            #phi2 = G*integrate.cumtrapz(Mr[::-1]/(r[::-1]**2 + (h_ags[c]/2.8)**2), x=r[::-1], initial=0.0)[::-1] - G*mc.sum()/r[-1] # spherical symmetry approximation
 
 
         rho = mc/(4*np.pi*hc**3/3)
-        v_cluster = np.average(vc,axis=0,weights=mc*rho**2)
+        v_cluster = np.average(vc,axis=0,weights=mc*np.abs(phi2))#rho**2)
 #        x_cluster = np.average(xc,axis=0,weights=mc*rho**2)
         vSqr = np.sum((vc - v_cluster)**2,axis=1)
 
@@ -257,15 +262,15 @@ def ComputeClusters(filename, options):
             bound_data["Center"].append(xc[bound][phic[bound].argmin()])
             bound_data["HalfMassRadius"].append(np.median(r[bound]))
             if fits:
-                print EFF_fit(mc[bound], xc[bound], phic[bound], hc[bound], dim=fits)
-                EFF_params, EFF_errors, EFF_dm, EFF_rChiSqr = EFF_fit(mc[bound], xc[bound], phic[bound], hc[bound], dim=fits)
+                #print EFF_fit(mc[bound], xc[bound], phic[bound], hc[bound], dim=fits)
+                EFF_params, EFF_errors, EFF_dm, EFF_rChiSqr = EFF_fit(mc[bound], xc[bound], phic[bound], hc[bound], dim=fits)#, path=filename.split("snapshot")[0])
                 bound_data["EFF_gamma"].append(EFF_params[2])
                 bound_data["EFF_gamma_error"].append(EFF_errors[2])
                 bound_data["EFF_a"].append(EFF_params[1])
                 bound_data["EFF_a_error"].append(EFF_errors[1])
                 bound_data["EFF_DeltaM"].append(EFF_dm)
                 bound_data["EFF_rChiSqr"].append(EFF_rChiSqr)
-                print "Reduced chi^2: %g Relative mass error: %g"%(EFF_rChiSqr,EFF_dm/mc[bound].sum())
+#                print "Reduced chi^2: %g Relative mass error: %g"%(EFF_rChiSqr,EFF_dm/mc[bound].sum())
 #    cluster_masses = np.array(bound_data["Mass"])
     bound_clusters = np.array(bound_clusters)[np.array(bound_data["Mass"]).argsort()[::-1]]
     
