@@ -27,7 +27,7 @@ import meshoid
 from docopt import docopt
 from collections import OrderedDict
 from EFF_fit import EFF_fit
-import TreePotential
+import pykdgrav
 from os import path
     
 @jit
@@ -131,7 +131,10 @@ def ComputeClusters(filename, options):
     x = np.array(F[ptype]["Coordinates"])
 
     if fuzz: x += np.random.normal(size=x.shape)*x.std()*fuzz
-    phi = np.array(F[ptype]["Potential"])
+    if "Potential" in F[ptype].keys():
+        phi = np.array(F[ptype]["Potential"])
+    else:
+        phi = pykdgrav.Potential(x,m,G=G,theta=1.)
     if "AGS-Softening" in F[ptype].keys():
         h_ags = np.array(F[ptype]["AGS-Softening"])
     elif "SmoothingLength" in F[ptype].keys():
@@ -238,7 +241,7 @@ def ComputeClusters(filename, options):
         if len(c) < brute_force_N:
             phi2 = ComputePotential(xc, mc, h_ags[c]/2.8, G) # direct summation
         else:
-            phi2 = TreePotential.Potential(np.float64(xc), np.float64(mc), G=G)
+            phi2 = pykdgrav.Potential(np.float64(xc), np.float64(mc), G=G)
             #phi2 = G*integrate.cumtrapz(Mr[::-1]/(r[::-1]**2 + (h_ags[c]/2.8)**2), x=r[::-1], initial=0.0)[::-1] - G*mc.sum()/r[-1] # spherical symmetry approximation
 
 
@@ -259,11 +262,11 @@ def ComputeClusters(filename, options):
             c = c[bound]
             bound_data["Mass"].append(mc[bound].sum())
             bound_data["NumParticles"].append(len(mc[bound]))
-            bound_data["Center"].append(xc[bound][phic[bound].argmin()])
+            bound_data["Center"].append(np.average(xc[bound],weights=phi2[bound]**2, axis=0))
             bound_data["HalfMassRadius"].append(np.median(r[bound]))
             if fits:
                 #print EFF_fit(mc[bound], xc[bound], phic[bound], hc[bound], dim=fits)
-                EFF_params, EFF_errors, EFF_dm, EFF_rChiSqr = EFF_fit(mc[bound], xc[bound], phic[bound], hc[bound], dim=fits)#, path=filename.split("snapshot")[0])
+                EFF_params, EFF_errors, EFF_dm, EFF_rChiSqr = EFF_fit(mc[bound], xc[bound], phi2[bound], hc[bound], dim=fits)#, path=filename.split("snapshot")[0])
                 bound_data["EFF_gamma"].append(EFF_params[2])
                 bound_data["EFF_gamma_error"].append(EFF_errors[2])
                 bound_data["EFF_a"].append(EFF_params[1])
@@ -281,14 +284,15 @@ def ComputeClusters(filename, options):
         Fout.create_group(cluster_id)
         for k in F[ptype].keys():
             Fout[cluster_id].create_dataset(k, data=np.array(F[ptype][k])[c])
-    
+        
+    Fout.close()
     F.close()
     
     #now save the ascii data files
     SaveArrayDict(filename.split("snapshot")[0] + "bound_%s.dat"%n, bound_data)
     SaveArrayDict(filename.split("snapshot")[0] + "unbound_%s.dat"%n, unbound_data)
 
-
+    
     
 def main():
     options = docopt(__doc__)
