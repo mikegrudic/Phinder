@@ -126,7 +126,7 @@ def EFF_fit(m, x, phi, h=None, dim=2, fit_min=100, path=None, nfits=3):
             sigmam_expected = sigmaN_expected * mbin
 
             if path:
-                print count.shape, r_avg.shape, path+"profile.dat"
+                print(count.shape, r_avg.shape, path+"profile.dat")
                 np.savetxt(path + "profile.dat", np.c_[r_avg, mbin/dvol, delta_M(rbins[1:],*params)/dvol, count])
                 
             params[1] = np.exp(params[1])
@@ -145,7 +145,7 @@ def EFF_fit(m, x, phi, h=None, dim=2, fit_min=100, path=None, nfits=3):
 
         
         except Exception as e:
-            print e
+            print(e)
             paramlist.append(np.repeat(np.nan,3))
             errorlist.append(np.repeat(np.nan, 3))
             rChiSqr.append(np.nan)
