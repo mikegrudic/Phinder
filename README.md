@@ -1,5 +1,5 @@
 # Phinder: robust bound star cluster finding via potential well grouping
-
+"""
 Usage: Phinder.py <files> ... [options]
 
 Options:                                                                       
@@ -13,3 +13,4 @@ Options:
    --brute_force_N=<N>        Maximum number of particles in a cluster before we compute the potential in the spherically-symmetric approximation. [default: 100000]
    --fuzz=<L>                 Randomly perturb particle positions by this small fraction to avoid problems with particles at the same position in 32bit floating point precision data [default: 0]
    --fits=<N>                 Fit clusters to EFF profile: 0 if no, 2 if fitting surface density, 3 if fitting 3D density. [default: 0]
+"""
