@@ -15,4 +15,9 @@ Options:
    --fuzz=<L>                 Randomly perturb particle positions by this small fraction to avoid problems with particles at the same position in 32bit floating point precision data [default: 0]
    --fits=<N>                 Fit clusters to EFF profile: 0 if no, 2 if fitting surface density, 3 if fitting 3D density. [default: 0]
 """
-'''
+```
+
+The output from running Phinder on snapshot_xxx.hdf5 will be 3 files in the same directory:
+unbound_xxx.dat - List of basic bulk properties of all associations of particles with common potential wells.
+bound_xxx.dat - As unbound_xxx.dat, but only for the bound subsets of those associations.
+Clusters_xxx.hdf5 - hdf5 file containing particle data for the clusters in bound_xxx.dat
