@@ -17,6 +17,12 @@ Options:
 """
 ```
 
+# Installation
+
+Clone and symlink Phinder.py to your path.
+
+# Output
+
 The output from running Phinder on snapshot_xxx.hdf5 will be 3 files in the same directory:
 
 unbound_xxx.dat - List of basic bulk properties of all associations of particles with common potential wells.
