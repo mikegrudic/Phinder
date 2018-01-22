@@ -8,7 +8,7 @@ Options:
    -h --help                  Show this screen.
    --softening=<L>            Gravitational softening used if adaptive softenings not found [default: 0.1]
    --ptype=<N>                GIZMO particle type to analyze [default: 4]
-   --G=<G>                    Gravitational constant to use; should be consistent with what was used in the simulation. [default: 1.0]
+   --G=<G>                    Gravitational constant to use; should be consistent with what was used in the simulation. [default: 4.301e4]
    --boxsize=<L>              Box size of the simulation; for neighbour-search purposes. [default: None]
    --cluster_ngb=<N>          Length of particle's neighbour list. [default: 32]
    --min_cluster_size=<N>     Minimum number of particles in cluster. [default: 32]
