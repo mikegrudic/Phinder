@@ -13,6 +13,7 @@ Options:
    --cluster_ngb=<N>          Length of particle's neighbour list. [default: 32]
    --min_cluster_size=<N>     Minimum number of particles in cluster. [default: 32]
    --brute_force_N=<N>        Maximum number of particles in a cluster before we compute the potential in the spherically-symmetric approximation. [default: 100000]
+   --recompute_potential      Use this if you want to compute the potential on the fly rather than use the snapshot's [default: False]
    --fuzz=<L>                 Randomly perturb particle positions by this small fraction to avoid problems with particles at the same position in 32bit floating point precision data [default: 0]
    --fits=<N>                 Fit clusters to EFF profile: 0 if no, 2 if fitting surface density, 3 if fitting 3D density. [default: 0]
 """
@@ -107,6 +108,7 @@ def ComputeClusters(filename, options):
     G = float(options["--G"])
     boxsize = options["--boxsize"]
     ptype = "PartType"+ options["--ptype"]
+    recompute_potential = options["--recompute_potential"]
     if boxsize != "None":
         boxsize = float(boxsize)
     else:
@@ -123,28 +125,38 @@ def ComputeClusters(filename, options):
         print("Particles of desired type not found!")
 
     m = np.array(F[ptype]["Masses"])
+    criteria = np.ones(len(m),dtype=np.bool)
+    m = m[criteria]
+    
     if len(m) < 32:
         print("Not enough particles for meaningful cluster analysis!")
         return
-
-
-    x = np.array(F[ptype]["Coordinates"])
-
+    
+    x = np.array(F[ptype]["Coordinates"])[criteria]
+    if ptype=="PartType0":
+        u = np.array(F[ptype]["InternalEnergy"])
+        rho = np.array(F[ptype]["Density"])
+        criteria *= (u < 10.)*(rho*404 > 10.) # only look at cold dense gas (<100K, >10cm^-3)
+        m = m[criteria]
+        x = x[criteria]
+        recompute_potential = True
+    
     if fuzz: x += np.random.normal(size=x.shape)*x.std()*fuzz
-    if "Potential" in F[ptype].keys():
-        phi = np.array(F[ptype]["Potential"])
+    if "Potential" in F[ptype].keys() and not recompute_potential:
+        phi = np.array(F[ptype]["Potential"])[criteria]
     else:
         phi = pykdgrav.Potential(x,m,G=G,theta=1.)
     if "AGS-Softening" in F[ptype].keys():
-        h_ags = np.array(F[ptype]["AGS-Softening"])
+        h_ags = np.array(F[ptype]["AGS-Softening"])[criteria]
     elif "SmoothingLength" in F[ptype].keys():
-        h_ags = np.array(F[ptype]["SmoothingLength"])
+        h_ags = np.array(F[ptype]["SmoothingLength"])[criteria]
     else:
         h_ags = softening*np.ones_like(m)
     hmin = h_ags.min()
         
-    v = np.array(F[ptype]["Velocities"])
-
+    v = np.array(F[ptype]["Velocities"])[criteria]
+    plt.scatter(x[:,0],x[:,1]); plt.axes().set_aspect('equal'); plt.show()
+    
     print("Finding neighbors...")
     mm = meshoid.meshoid(x, m, des_ngb=cluster_ngb, boxsize=boxsize)
     h = mm.h
@@ -250,8 +262,8 @@ def ComputeClusters(filename, options):
 #        x_cluster = np.average(xc,axis=0,weights=mc*rho**2)
         vSqr = np.sum((vc - v_cluster)**2,axis=1)
 
-#        old_size = len(c)
         bound = 0.5*vSqr + phi2 < 0
+
 
         unbound_data["BoundFraction"].append(float(bound.sum())/len(bound))
 
