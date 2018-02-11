@@ -155,7 +155,6 @@ def ComputeClusters(filename, options):
     hmin = h_ags.min()
         
     v = np.array(F[ptype]["Velocities"])[criteria]
-    plt.scatter(x[:,0],x[:,1]); plt.axes().set_aspect('equal'); plt.show()
     
     print("Finding neighbors...")
     mm = meshoid.meshoid(x, m, des_ngb=cluster_ngb, boxsize=boxsize)
