@@ -127,7 +127,7 @@ def ComputeClusters(filename, options):
     m = np.array(F[ptype]["Masses"])
     criteria = np.ones(len(m),dtype=np.bool)
     m = m[criteria]
-    
+
     if len(m) < 32:
         print("Not enough particles for meaningful cluster analysis!")
         return
@@ -137,10 +137,12 @@ def ComputeClusters(filename, options):
         u = np.array(F[ptype]["InternalEnergy"])
         rho = np.array(F[ptype]["Density"])
         criteria *= (u < 10.)*(rho*404 > 10.) # only look at cold dense gas (<100K, >10cm^-3)
+        print(criteria.sum())
         m = m[criteria]
         x = x[criteria]
         recompute_potential = True
-    
+
+
     if fuzz: x += np.random.normal(size=x.shape)*x.std()*fuzz
     if "Potential" in F[ptype].keys() and not recompute_potential:
         phi = np.array(F[ptype]["Potential"])[criteria]
@@ -284,6 +286,8 @@ def ComputeClusters(filename, options):
                 bound_data["EFF_a_error"].append(EFF_errors[1])
                 bound_data["EFF_DeltaM"].append(EFF_dm)
                 bound_data["EFF_rChiSqr"].append(EFF_rChiSqr)
+
+    print("Done grouping bound clusters!")
 #                print "Reduced chi^2: %g Relative mass error: %g"%(EFF_rChiSqr,EFF_dm/mc[bound].sum())
 #    cluster_masses = np.array(bound_data["Mass"])
     bound_clusters = np.array(bound_clusters)[np.array(bound_data["Mass"]).argsort()[::-1]]
@@ -294,7 +298,7 @@ def ComputeClusters(filename, options):
         N = len(c)
         Fout.create_group(cluster_id)
         for k in F[ptype].keys():
-            Fout[cluster_id].create_dataset(k, data=np.array(F[ptype][k])[c])
+            Fout[cluster_id].create_dataset(k, data=np.array(F[ptype][k])[criteria][c])
         
     Fout.close()
     F.close()
